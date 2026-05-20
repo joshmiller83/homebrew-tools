@@ -1,0 +1,83 @@
+name: Update Formulae
+
+on:
+  schedule:
+    # Run once a week at midnight on Sunday
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    # Allow manual triggering
+
+jobs:
+  update-formulae:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    strategy:
+      matrix:
+        include:
+          - name: diffy-cli
+            repo: DiffyWebsite/diffy-cli
+            formula: Formula/diffy-cli.rb
+            asset: diffy.phar
+          - name: drupalorg-cli
+            repo: mglaman/drupalorg-cli
+            formula: Formula/drupalorg-cli.rb
+            asset: drupalorg.phar
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for new version
+        id: check_version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_TAG=$(gh release view --repo ${{ matrix.repo }} --json tagName --template '{{.tagName}}')
+          CURRENT_VERSION=$(grep -E '^\s*version "' ${{ matrix.formula }} | cut -d '"' -f 2)
+          
+          echo "Latest version: $LATEST_TAG"
+          echo "Current version: $CURRENT_VERSION"
+          
+          if [ "$LATEST_TAG" == "$CURRENT_VERSION" ]; then
+            echo "No update needed for ${{ matrix.name }}."
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Update needed for ${{ matrix.name }} to $LATEST_TAG."
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+            echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Formula
+        if: steps.check_version.outputs.update_needed == 'true'
+        run: |
+          LATEST_TAG="${{ steps.check_version.outputs.latest_tag }}"
+          URL="https://github.com/Software/Repository/releases/download/$LATEST_TAG/${{ matrix.asset }}"
+          # Actually we need the real URL format for each.
+          # For Diffy: https://github.com/DiffyWebsite/diffy-cli/releases/download/0.1.53/diffy.phar
+          # For Drupalorg: https://github.com/mglaman/drupalorg-cli/releases/download/0.10.1/drupalorg.phar
+          REAL_URL="https://github.com/${{ matrix.repo }}/releases/download/$LATEST_TAG/${{ matrix.asset }}"
+          
+          echo "Downloading $REAL_URL..."
+          curl -L -o ${{ matrix.asset }} "$REAL_URL"
+          
+          SHA256=$(shasum -a 256 ${{ matrix.asset }} | cut -d ' ' -f 1)
+          echo "New SHA256: $SHA256"
+          
+          # Use sed to update the formula file
+          sed -i "s|url \".*\"|url \"$REAL_URL\"|" ${{ matrix.formula }}
+          sed -i "s|version \".*\"|version \"$LATEST_TAG\"|" ${{ matrix.formula }}
+          sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" ${{ matrix.formula }}
+          
+          rm ${{ matrix.asset }}
+
+      - name: Commit and Push
+        if: steps.check_version.outputs.update_needed == 'true'
+        run: |
+          LATEST_TAG="${{ steps.check_version.outputs.latest_tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ${{ matrix.formula }}
+          git commit -m "Update ${{ matrix.name }} to $LATEST_TAG"
+          git push || (git pull --rebase && git push)
