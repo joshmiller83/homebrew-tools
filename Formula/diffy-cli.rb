@@ -1,9 +1,9 @@
 class DiffyCli < Formula
   desc "CLI for DiffyWebsite - visual regression testing service"
   homepage "https://github.com/DiffyWebsite/diffy-cli"
-  url "https://github.com/DiffyWebsite/diffy-cli/releases/download/0.1.54/diffy.phar"
-  version "0.1.54"
-  sha256 "324d617ecf476398244796d40a2eb3ccd6ec68a4ff3e4f9ce8f6f103aba2d7f9"
+  url "https://github.com/DiffyWebsite/diffy-cli/releases/download/0.1.55/diffy.phar"
+  version "0.1.55"
+  sha256 "8b7d97784362fb5c060f29b3ef7bc79b80e5976209e1954d08b08eb9e92f742e"
   license "MIT"
 
   depends_on "php"
