@@ -1,9 +1,9 @@
 class DrupalorgCli < Formula
   desc "CLI tool for interacting with Drupal.org"
   homepage "https://github.com/mglaman/drupalorg-cli"
-  url "https://github.com/mglaman/drupalorg-cli/releases/download/0.10.3/drupalorg.phar"
-  version "0.10.3"
-  sha256 "65628980d1b3a7cf36cda0017c77fe915f19e6a61dca873dc02d6a9b6ce95925"
+  url "https://github.com/mglaman/drupalorg-cli/releases/download/0.12.0/drupalorg.phar"
+  version "0.12.0"
+  sha256 "235629982a5dcc790f328b907d25dd7c7ff028e43549eeee96083de949ede1a9"
   license "MIT"
 
   depends_on "php"
